@@ -116,6 +116,13 @@ export default function MermaidBlock({ code }: MermaidBlockProps) {
 				})
 				.then(({ svg }) => {
 					if (containerRef.current) {
+						// Sanitize SVG content to prevent XSS attacks
+						const parser = new DOMParser()
+						const svgDoc = parser.parseFromString(svg, 'image/svg+xml')
+						const errorNode = svgDoc.querySelector('parsererror')
+						if (errorNode) {
+							throw new Error('Invalid SVG content')
+						}
 						containerRef.current.innerHTML = svg
 					}
 				})

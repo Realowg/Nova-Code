@@ -1667,7 +1667,7 @@ export class ClineProvider
 		try {
 			// Validate and sanitize global state commands
 			const validGlobalCommands = Array.isArray(globalStateCommands)
-				? globalStateCommands.filter((cmd) => typeof cmd === "string" && cmd.trim().length > 0)
+				? globalStateCommands.filter((cmd) => typeof cmd === "string" && cmd.trim().length)
 				: []
 
 			// Get workspace configuration commands
@@ -1675,7 +1675,7 @@ export class ClineProvider
 
 			// Validate and sanitize workspace commands
 			const validWorkspaceCommands = Array.isArray(workspaceCommands)
-				? workspaceCommands.filter((cmd) => typeof cmd === "string" && cmd.trim().length > 0)
+				? workspaceCommands.filter((cmd) => typeof cmd === "string" && cmd.trim().length)
 				: []
 
 			// Combine and deduplicate commands

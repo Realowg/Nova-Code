@@ -113,10 +113,12 @@ export function parseMarkdownChecklist(md: string): TodoItem[] {
 		let status: TodoStatus = "pending"
 		if (match[1] === "x" || match[1] === "X") status = "completed"
 		else if (match[1] === "-" || match[1] === "~") status = "in_progress"
+		// Use SHA-256 instead of MD5 for better security and collision resistance
 		const id = crypto
-			.createHash("md5")
-			.update(match[2] + status)
+			.createHash("sha256")
+			.update(match[2] + status + Date.now().toString())
 			.digest("hex")
+			.substring(0, 16) // Keep it reasonably short for UI purposes
 		todos.push({
 			id,
 			content: match[2],

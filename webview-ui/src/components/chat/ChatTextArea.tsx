@@ -742,7 +742,14 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				return match // Return unhighlighted if command is not valid
 			})
 
-			highlightLayerRef.current.innerHTML = processedText
+			// Sanitize HTML content to prevent XSS attacks
+			// Since processedText contains HTML for highlighting, we need to sanitize it
+			const sanitizeHTML = (html: string): string => {
+				const tempDiv = document.createElement('div')
+				tempDiv.textContent = html
+				return tempDiv.innerHTML.replace(/&lt;mark class="mention-context-textarea-highlight"&gt;/g, '<mark class="mention-context-textarea-highlight">').replace(/&lt;\/mark&gt;/g, '</mark>')
+			}
+			highlightLayerRef.current.innerHTML = sanitizeHTML(processedText)
 
 			highlightLayerRef.current.scrollTop = textAreaRef.current.scrollTop
 			highlightLayerRef.current.scrollLeft = textAreaRef.current.scrollLeft

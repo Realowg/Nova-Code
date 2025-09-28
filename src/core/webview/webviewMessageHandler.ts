@@ -965,7 +965,7 @@ export const webviewMessageHandler = async (
 			// Validate and sanitize the commands array
 			const commands = message.commands ?? []
 			const validCommands = Array.isArray(commands)
-				? commands.filter((cmd) => typeof cmd === "string" && cmd.trim().length > 0)
+				? commands.filter((cmd) => typeof cmd === "string" && cmd.trim().length)
 				: []
 
 			await updateGlobalState("allowedCommands", validCommands)
@@ -981,7 +981,7 @@ export const webviewMessageHandler = async (
 			// Validate and sanitize the commands array
 			const commands = message.commands ?? []
 			const validCommands = Array.isArray(commands)
-				? commands.filter((cmd) => typeof cmd === "string" && cmd.trim().length > 0)
+				? commands.filter((cmd) => typeof cmd === "string" && cmd.trim().length)
 				: []
 
 			await updateGlobalState("deniedCommands", validCommands)
