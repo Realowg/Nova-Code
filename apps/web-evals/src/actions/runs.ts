@@ -1,8 +1,6 @@
 "use server"
 
-import * as path from "path"
-import fs from "fs"
-import { fileURLToPath } from "url"
+import * as fs from "fs"
 import { spawn } from "child_process"
 
 import { revalidatePath } from "next/cache"
@@ -15,11 +13,13 @@ import {
 	deleteRun as _deleteRun,
 	createTask,
 	getExercisesForLanguage,
+	EVALS_REPO_PATH as DEFAULT_EVALS_REPO_PATH,
 } from "@roo-code/evals"
 
 import { CreateRun } from "@/lib/schemas"
 
-const EVALS_REPO_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../../evals")
+// Use the repo path exported by @roo-code/evals which points to its exercises directory
+const EVALS_REPO_PATH = DEFAULT_EVALS_REPO_PATH
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function createRun({ suite, exercises = [], systemPrompt, timeout, ...values }: CreateRun) {
@@ -51,42 +51,49 @@ export async function createRun({ suite, exercises = [], systemPrompt, timeout, 
 
 	revalidatePath("/runs")
 
+	// Vercel serverless/functions cannot spawn background processes or access Docker.
+	// Only attempt to spawn the controller in environments that support it.
 	try {
-		const isRunningInDocker = fs.existsSync("/.dockerenv")
+		const isServerful = process.env.VERCEL !== "1" && process.env.NEXT_RUNTIME !== "edge"
+		if (isServerful) {
+			const isRunningInDocker = fs.existsSync("/.dockerenv")
 
-		const dockerArgs = [
-			`--name evals-controller-${run.id}`,
-			"--rm",
-			"--network evals_default",
-			"-v /var/run/docker.sock:/var/run/docker.sock",
-			"-v /tmp/evals:/var/log/evals",
-			"-e HOST_EXECUTION_METHOD=docker",
-		]
+			const dockerArgs = [
+				`--name evals-controller-${run.id}`,
+				"--rm",
+				"--network evals_default",
+				"-v /var/run/docker.sock:/var/run/docker.sock",
+				"-v /tmp/evals:/var/log/evals",
+				"-e HOST_EXECUTION_METHOD=docker",
+			]
 
-		const cliCommand = `pnpm --filter @roo-code/evals cli --runId ${run.id}`
+			const cliCommand = `pnpm --filter @roo-code/evals cli --runId ${run.id}`
 
-		const command = isRunningInDocker
-			? `docker run ${dockerArgs.join(" ")} evals-runner sh -c "${cliCommand}"`
-			: cliCommand
+			const command = isRunningInDocker
+				? `docker run ${dockerArgs.join(" ")} evals-runner sh -c "${cliCommand}"`
+				: cliCommand
 
-		console.log("spawn ->", command)
+			console.log("spawn ->", command)
 
-		const childProcess = spawn("sh", ["-c", command], {
-			detached: true,
-			stdio: ["ignore", "pipe", "pipe"],
-		})
+			const childProcess = spawn("sh", ["-c", command], {
+				detached: true,
+				stdio: ["ignore", "pipe", "pipe"],
+			})
 
-		const logStream = fs.createWriteStream("/tmp/roo-code-evals.log", { flags: "a" })
+			const logStream = fs.createWriteStream("/tmp/roo-code-evals.log", { flags: "a" })
 
-		if (childProcess.stdout) {
-			childProcess.stdout.pipe(logStream)
+			if (childProcess.stdout) {
+				childProcess.stdout.pipe(logStream)
+			}
+
+			if (childProcess.stderr) {
+				childProcess.stderr.pipe(logStream)
+			}
+
+			childProcess.unref()
+		} else {
+			console.warn("Skipping background evals controller spawn on Vercel/edge runtime.")
 		}
-
-		if (childProcess.stderr) {
-			childProcess.stderr.pipe(logStream)
-		}
-
-		childProcess.unref()
 	} catch (error) {
 		console.error(error)
 	}

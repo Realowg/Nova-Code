@@ -2,9 +2,11 @@ import * as path from "path"
 import * as fs from "fs/promises"
 import { fileURLToPath } from "url"
 
+// Resolve this package directory regardless of module system
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export const EVALS_REPO_PATH = path.resolve(__dirname, "..", "..", "..", "..", "..", "evals")
+// Base directory that contains the per-language exercise folders
+export const EVALS_REPO_PATH = __dirname
 
 export const exerciseLanguages = ["go", "java", "javascript", "python", "rust"] as const
 
@@ -22,4 +24,4 @@ export const listDirectories = async (basePath: string, relativePath: string) =>
 }
 
 export const getExercisesForLanguage = async (basePath: string, language: ExerciseLanguage) =>
-	listDirectories(__dirname, path.join(basePath, language))
+	listDirectories(basePath, language)
